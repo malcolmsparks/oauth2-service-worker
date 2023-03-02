@@ -31,7 +31,7 @@
     document
   .getElementById("authenticate")
   .addEventListener("click", async () => {
-    await controlled_fetch("https://data.site.test/_site/users", {})
+    console.dir(await controlled_fetch("https://data.site.test/_site/users", {}))
     // "https://swapi.dev/api/people/1/"
   });
 
