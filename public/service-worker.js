@@ -61,9 +61,7 @@ async function createAuthorizationRequest({
   return {
     request: new Request(url, { method: "GET", credentials: "include" }),
     codeVerifier,
-    state,
-    // This is required so we can intercept the redirect
-    redirect: 'manual'
+    state
   };
 }
 
@@ -110,7 +108,9 @@ async function sendMessage({ type, data, info }) {
 
 // to intercept the request and add the access token to the Authorization header when hitting the protected resource URL.
 async function attachBearerToken(request, clientId) {
-  console.log("in request handler service worker");
+  return request;
+
+  console.log("attachBearerToken");
 
   const configItem = getConfigForOrigin(request);
   if (!configItem) {
@@ -125,14 +125,24 @@ async function attachBearerToken(request, clientId) {
       headers.set("Authorization", `Bearer ${access_token}`);
     }
     return new Request(request, { headers });
+  } else {
+    return request;
   }
+
+  // This is old stuff
 
   const authorizationRequest = await createAuthorizationRequest(configItem);
   console.log("Authorization Request", authorizationRequest);
 
+  try {
   const authorizationResponse = await fetch(authorizationRequest.request);
   console.log("Authorization Response", authorizationResponse);
+  } catch (e) {
+    console.log("ERROR:",e)
+  }
+
   const { location } = { ...authorizationResponse.headers };
+
 
   const locationUrl = new URL(location);
   const redirectUrl = new URL(configItem.redirect_uri);

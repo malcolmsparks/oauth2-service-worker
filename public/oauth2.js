@@ -102,4 +102,33 @@ function sendAuthTokenRequestFn(
       });
 }
 
-export async function useOAuth2(resources) {}
+function bearerFetch(uri, opts) {
+  console.log("HERE: we are fetching for", uri);
+  const response = fetch(uri, opts).then(response => {
+    console.log("Fetching");
+    if (response.status === 401) {
+      // Now let's go to the authorization point
+      fetch("https://auth.site.test/oauth/authorize");
+      console.log("TODO: We must now get an access token")
+    }
+  });
+  return response;
+}
+
+export function useOAuth2(config) {
+
+//  navigator.serviceWorker
+//    .register('./service-worker.js', {
+//      type: "module"
+//    })
+
+//  navigator.serviceWorker.addEventListener("message", (event) => {
+//    console.log("in service onmessage")
+//    console.log(event.data.msg, event.data.url);
+//  });
+
+  console.log("useOAuth2 initalised");
+
+  return { bearerFetch };
+
+}

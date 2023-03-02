@@ -1,47 +1,74 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-  <title>My App</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-</head>
+  <head>
+    <title>My App</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  </head>
 
-<body>
-  <h1>HW</h1>
-  <div id="authenticate">Click here to authenticate</div>
-  <div id="users">Protected endpoint data</div>
-  <div id="payload"></div>
-  <div id="open">Open endpoint data</div>
-  <div id="payload-open"></div>
-</body>
-<script type="module">
+  <body>
+    <h1>HW</h1>
+    <button id="authenticate">Click here to try a fetch</button>
+    <div id="users">Protected endpoint data</div>
+    <div id="payload"></div>
+    <div id="open">Open endpoint data</div>
+    <div id="payload-open"></div>
+  </body>
 
-  navigator.serviceWorker
-    .register('./service-worker.js', {
-      type: "module",
-    })
+  <script type="module">
 
-  navigator.serviceWorker.addEventListener("message", (event) => {
-    console.log("in service onmessage")
-    console.log(event.data.msg, event.data.url);
+    import { useOAuth2 } from './oauth2.js';
+
+    const config = [{
+      origin: "https://data.site.test",
+      client_id: "surveyor",
+      authorization_endpoint: "https://auth.site.test/oauth/authorize",
+      token_endpoint: "https://auth.site.test/oauth/token",
+      redirect_uri: "https://surveyor.site.test/index.html",
+      requested_scopes: ""
+    }]
+
+    const { bearerFetch } = useOAuth2(config);
+
+    console.dir(bearerFetch);
+
+    class ControlledFetch {
+
+      constructor(uri, opts) {
+	this.fetch = fetch(uri, opts);
+	const { origin } = new URL(uri);
+	this.config_item = config.find((item) => item.origin === origin);
+      }
+
+      then(x) {
+	if (this.config_item) {
+	  this.fetch.then(response => {
+	    if (response.status == 401) {
+	      console.log("TODO: let's authorize");
+	      console.dir(response);
+	      console.dir(this.config_item);
+	      throw new Error("TODO: write authorize fetch:" + config_item);
+	    } else {
+	      x(response)
+	    }
+	  });
+	} else {
+	  this.fetch.then(x);
+	}
+      }
+    }
+
+    const controlled_fetch = function(uri, opts) {
+      return new ControlledFetch(uri, opts);
+    };
+
+    document
+  .getElementById("authenticate")
+  .addEventListener("click", async () => {
+    await controlled_fetch("https://data.site.test/_site/users", {})
+    // "https://swapi.dev/api/people/1/"
   });
 
-  // TODO: pass this somehow to the service worker
-  const config = [{
-    origin: "https://data.site.test",
-    client_id: "our-app",
-    authorization_endpoint: "https://auth.site.test/oauth/authorize",
-    token_endpoint: "https://auth.site.test/oauth/token",
-    redirect_uri: "https://surveyor.site.test/index.html",
-    requested_scopes: ""
-  }];
-
-  document
-    .getElementById("authenticate")
-    .addEventListener("click", () => {
-      fetch("https://data.site.test/_site/users")
-    });
-
-</script>
+  </script>
 
 </html>
