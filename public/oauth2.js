@@ -29,7 +29,7 @@ class ControlledFetch {
     this.config_item = config.find((item) => item.origin === origin);
   }
 
-  async then(x) {
+  async then(delegate) {
     if (this.config_item) {
       const ci = this.config_item;
       this.fetch.then(async function(response) {
@@ -39,7 +39,7 @@ class ControlledFetch {
 	  localStorage.setItem("pkce_code_verifier", code_verifier);
 	  throw new Error("TODO")
 	} else {
-	  x(response)
+	  delegate(response)
 	}
       });
     } else {
