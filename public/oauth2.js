@@ -37,13 +37,16 @@ class ControlledFetch {
 	  const { url, state, code_verifier } = await authorization_code_request_info(ci);
 	  localStorage.setItem("pkce_state", state);
 	  localStorage.setItem("pkce_code_verifier", code_verifier);
-	  throw new Error("TODO")
+	  localStorage.setItem("oauth2_client_id", ci.client_id);
+	  localStorage.setItem("oauth2_token_endpoint", ci.token_endpoint);
+	  localStorage.setItem("oauth2_redirect_uri", ci.redirect_uri);
+	  window.location = url;
 	} else {
 	  delegate(response)
 	}
       });
     } else {
-      this.fetch.then(x);
+      this.fetch.then(delegate);
     }
   }
 }

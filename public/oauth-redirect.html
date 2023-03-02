@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>Redirect</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  </head>
+
+  <body>
+  </body>
+
+  <script type="module">
+
+    import { exchangeCodeForAccessToken } from './oauth2-redirect.js';
+
+    exchangeCodeForAccessToken({query_params: new URLSearchParams(window.location.search)});
+
+  </script>
+
+</html>
