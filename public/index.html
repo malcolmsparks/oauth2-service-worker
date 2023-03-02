@@ -19,48 +19,14 @@
 
     import { useOAuth2 } from './oauth2.js';
 
-    const config = [{
+    const { controlled_fetch } = useOAuth2([{
       origin: "https://data.site.test",
       client_id: "surveyor",
       authorization_endpoint: "https://auth.site.test/oauth/authorize",
       token_endpoint: "https://auth.site.test/oauth/token",
       redirect_uri: "https://surveyor.site.test/index.html",
       requested_scopes: ""
-    }]
-
-    const { bearerFetch } = useOAuth2(config);
-
-    console.dir(bearerFetch);
-
-    class ControlledFetch {
-
-      constructor(uri, opts) {
-	this.fetch = fetch(uri, opts);
-	const { origin } = new URL(uri);
-	this.config_item = config.find((item) => item.origin === origin);
-      }
-
-      then(x) {
-	if (this.config_item) {
-	  this.fetch.then(response => {
-	    if (response.status == 401) {
-	      console.log("TODO: let's authorize");
-	      console.dir(response);
-	      console.dir(this.config_item);
-	      throw new Error("TODO: write authorize fetch:" + config_item);
-	    } else {
-	      x(response)
-	    }
-	  });
-	} else {
-	  this.fetch.then(x);
-	}
-      }
-    }
-
-    const controlled_fetch = function(uri, opts) {
-      return new ControlledFetch(uri, opts);
-    };
+    }]);
 
     document
   .getElementById("authenticate")
