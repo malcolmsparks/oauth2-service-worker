@@ -19,19 +19,26 @@
 
     import { useOAuth2 } from './oauth2.js';
 
+//    const resource_server = "https://home.juxt.site"
+//    const authorization_server = "https://auth.home.juxt.site"
+
+    const resource_server = "https://data.site.test"
+    const authorization_server = "https://auth.site.test"
+    const app_server = "https://surveyor.apps.com"
+
     const { controlled_fetch } = useOAuth2([{
-      origin: "https://data.site.test",
+      origin: resource_server, // ???
       client_id: "surveyor",
-      authorization_endpoint: "https://auth.site.test/oauth/authorize",
-      token_endpoint: "https://auth.site.test/oauth/token",
-      redirect_uri: "https://surveyor.site.test/index.html",
+      authorization_endpoint: `${authorization_server}/oauth/authorize`,
+      token_endpoint: `${authorization_server}/oauth/token`,
+      redirect_uri: `${app_server}/index.html`,
       requested_scopes: ""
     }]);
 
     document
   .getElementById("authenticate")
   .addEventListener("click", async () => {
-    console.dir(await controlled_fetch("https://data.site.test/_site/users", {}))
+    console.dir(await controlled_fetch(`${resource_server}/_site/users`, {}))
     // "https://swapi.dev/api/people/1/"
   });
 
