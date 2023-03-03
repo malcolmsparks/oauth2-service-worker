@@ -12,14 +12,23 @@ addEventListener("activate", (event) => {
   event.waitUntil(clients.claim());
 });
 
-self.addEventListener("message", (event) => {
-  if (event.data.type === "update") {
-    const data = event.data.data;
-    console.log("data:", data);
-  }
-});
-
 const tokenStore = new Map();
+
+self.addEventListener("message", (event) => {
+  console.log("message sent from client and received in worker:", event.data);
+
+  const type = event.data.type;
+
+  switch (type) {
+    case "storeToken":
+      tokenStore.set(event.data.origin, event.data.token);
+      break;
+    default:
+      console.log("type:", type, "not handled");
+  }
+
+  event.source.postMessage("I received your message!");
+});
 
 const config = [
   {
@@ -29,7 +38,7 @@ const config = [
     requested_scopes: "",
     // These are from metadata
     authorization_endpoint: "https://auth.site.test/oauth/authorize",
-    token_endpoint: "https://auth.site.test/oauth/token"
+    token_endpoint: "https://auth.site.test/oauth/token",
   },
 ];
 
@@ -61,7 +70,7 @@ async function createAuthorizationRequest({
   return {
     request: new Request(url, { method: "GET", credentials: "include" }),
     codeVerifier,
-    state
+    state,
   };
 }
 
@@ -93,19 +102,6 @@ function getConfigForOrigin(request) {
   return config.find((item) => item.origin === origin);
 }
 
-async function sendMessage({ type, data, info }) {
-  console.log("clientId:", clientId);
-
-  if (!clientId) return;
-  // Get the client.
-  const client = await clients.get(clientId);
-  // Exit early if we don't get the client.
-  // Eg, if it closed.
-  if (!client) return;
-  // Send a message to the client.
-  client.postMessage({ type, data, info });
-}
-
 // to intercept the request and add the access token to the Authorization header when hitting the protected resource URL.
 async function attachBearerToken(request, clientId) {
   return request;
@@ -135,19 +131,20 @@ async function attachBearerToken(request, clientId) {
   console.log("Authorization Request", authorizationRequest);
 
   try {
-  const authorizationResponse = await fetch(authorizationRequest.request);
-  console.log("Authorization Response", authorizationResponse);
+    const authorizationResponse = await fetch(authorizationRequest.request);
+    console.log("Authorization Response", authorizationResponse);
   } catch (e) {
-    console.log("ERROR:",e)
+    console.log("ERROR:", e);
   }
 
   const { location } = { ...authorizationResponse.headers };
 
-
   const locationUrl = new URL(location);
   const redirectUrl = new URL(configItem.redirect_uri);
 
-  console.log("mal> no access token yet, but we have an authorization response");
+  console.log(
+    "mal> no access token yet, but we have an authorization response"
+  );
   console.log("mal> locationUrl.origin is " + locationUrl.origin);
   console.log("mal> redirectUrl.origin is " + redirectUrl.origin);
 
@@ -189,6 +186,8 @@ const modifyResponse = (response) => {
 };
 
 async function fetchWithBearerToken({ request, clientId }) {
+  return fetch(request);
+
   const newRequest =
     request instanceof Request ? request : new Request(request);
   const attachBearerTokenFn = await attachBearerToken(newRequest, clientId);
