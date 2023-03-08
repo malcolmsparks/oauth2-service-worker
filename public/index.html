@@ -1,47 +1,77 @@
 <!DOCTYPE html>
 <html>
 
-  <head>
-    <title>My App</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-  </head>
+<head>
+  <title>My App</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  <body>
-    <h1>HW</h1>
-    <button id="authenticate">Click here to try a fetch</button>
-    <div id="users">Protected endpoint data</div>
-    <div id="payload"></div>
-    <div id="open">Open endpoint data</div>
-    <div id="payload-open"></div>
-  </body>
+  <style>
+    html,
+    body {
+      height: 100%;
+    }
+  </style>
 
-  <script type="module">
+</head>
 
-    import { useOAuth2 } from './oauth2.js';
+<body>
+  <div class="flex justify-center items-center h-full">
 
-//    const resource_server = "https://home.juxt.site"
-//    const authorization_server = "https://auth.home.juxt.site"
+    <div>
 
-    const resource_server = "https://data.site.test"
-    const authorization_server = "https://auth.site.test"
-    const app_server = "https://surveyor.apps.com"
+      <button id="login"
+        class="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded">
+        Login
+      </button>
+      <button id="api"
+        class="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded">
+        API
+      </button>
+      <div id="data"></div>
+    </div>
+  </div>
+</body>
 
-    const { controlled_fetch } = useOAuth2([{
-      origin: resource_server, // ???
-      client_id: "surveyor",
-      authorization_endpoint: `${authorization_server}/oauth/authorize`,
-      token_endpoint: `${authorization_server}/oauth/token`,
-      redirect_uri: `${app_server}/index.html`,
-      requested_scopes: ""
-    }]);
+<script type="module">
 
-    document
-  .getElementById("authenticate")
-  .addEventListener("click", async () => {
-    console.dir(await controlled_fetch(`${resource_server}/_site/users`, {}))
-    // "https://swapi.dev/api/people/1/"
-  });
+  import { exchangeCodeForAccessToken, authorize, useOAuth2 } from './oauth2.js';
 
-  </script>
+  const resource_server = "https://home.juxt.site"
+  const authorization_server = "https://auth.home.juxt.site"
+
+  // const resource_server = "https://data.site.test"
+  // const authorization_server = "https://auth.site.test"
+  const app_server = "https://surveyor.apps.com"
+
+  // invoked solely to initialize the service worker
+  useOAuth2();
+
+  const authorizeFn = async () => authorize({
+    origin: resource_server,
+    client_id: "surveyor",
+    authorization_endpoint: `${authorization_server}/oauth/authorize`,
+    token_endpoint: `${authorization_server}/oauth/token`,
+    redirect_uri: `${app_server}/index.html`,
+    requested_scopes: ""
+  })
+
+  document
+    .getElementById("login")
+    .addEventListener("click", authorizeFn);
+
+  document
+    .getElementById("api")
+    .addEventListener("click", async () => {
+      const res = await fetch(`${resource_server}/_site/users`, {})
+      const data = await res.text()
+      document.getElementById("data").innerHTML =
+        `<div class="bg-gray-200 p-4 mt-4 rounded-md">
+      ${data}
+      </div>`
+    });
+
+
+</script>
 
 </html>

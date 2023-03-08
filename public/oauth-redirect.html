@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html>
 
-  <head>
-    <title>Redirect</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-  </head>
+<head>
+  <title>Redirect</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+</head>
 
-  <body>
-  </body>
+<body>
+</body>
 
-  <script type="module">
+<script type="module">
 
-    import { exchangeCodeForAccessToken } from './oauth2-redirect.js';
+  import { exchangeCodeForAccessToken } from './oauth2.js';
 
-    exchangeCodeForAccessToken({query_params: new URLSearchParams(window.location.search)});
 
-  </script>
+  const accessTokenFn = async () => await exchangeCodeForAccessToken({ query_params: new URLSearchParams(window.location.search) });
+
+  accessTokenFn().then(() => {
+    window.location.href = "https://surveyor.apps.com/index.html";
+  });
+
+</script>
 
 </html>

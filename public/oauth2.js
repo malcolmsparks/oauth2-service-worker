@@ -25,66 +25,72 @@ async function authorization_code_request_info({
   };
 }
 
-class ControlledFetch {
-  constructor(config, uri, opts) {
-    this.fetch = fetch(uri, opts);
-    const { origin } = new URL(uri);
-    this.config_item = config.find((item) => item.origin === origin);
-  }
-
-  async then(delegate) {
-    if (this.config_item) {
-      const ci = this.config_item;
-      this.fetch.then(async function (response) {
-        if (response.status == 401) {
-          const { url, state, code_verifier } =
-            await authorization_code_request_info(ci);
-          localStorage.setItem("pkce_state", state);
-          localStorage.setItem("pkce_code_verifier", code_verifier);
-          localStorage.setItem("oauth2_client_id", ci.client_id);
-          localStorage.setItem("oauth2_token_endpoint", ci.token_endpoint);
-          localStorage.setItem("oauth2_redirect_uri", ci.redirect_uri);
-          window.location = url;
-        } else {
-          delegate(response);
-        }
-      });
-    } else {
-      this.fetch.then(delegate);
-    }
-  }
-}
-
 async function postMessageToWorker(obj) {
-  // const registration = await navigator.serviceWorker.getRegistration();
-
   const registration = await navigator.serviceWorker.ready;
   const serviceWorker = registration.active;
   serviceWorker.postMessage(obj);
 }
 
-function make_controlled_fetch(config) {
-  return function (uri, opts) {
-    return new ControlledFetch(config, uri, opts);
-  };
+export function exchangeCodeForAccessToken({ query_params }) {
+  const state1 = localStorage.getItem("pkce_state");
+  const state2 = query_params.get("state");
+  const code = query_params.get("code");
+
+  if (!code || !state2) {
+    console.log("No code or state in query params");
+    return;
+  }
+
+  if (state1 !== state2) {
+    console.error("State mismatch");
+    return;
+  }
+
+  const redirect_uri = localStorage.getItem("oauth2_redirect_uri");
+  const client_id = localStorage.getItem("oauth2_client_id");
+  const code_verifier = localStorage.getItem("pkce_code_verifier");
+
+  const payload_params = new URLSearchParams({
+    grant_type: "authorization_code",
+    code: code,
+    redirect_uri: redirect_uri,
+    client_id: client_id,
+    code_verifier: code_verifier,
+  });
+
+  const token_endpoint = localStorage.getItem("oauth2_token_endpoint");
+
+  return fetch(token_endpoint, {
+    method: "POST",
+    headers: new Headers({
+      "Content-Type": "application/x-www-form-urlencoded",
+    }),
+    body: payload_params,
+    credentials: "include",
+  });
 }
 
-export function useOAuth2(config) {
-  navigator.serviceWorker.register("./service-worker.js", {
-    type: "module",
+export async function authorize(config) {
+  // store config in service worker
+  postMessageToWorker({
+    type: "storeConfig",
+    config,
   });
 
-  navigator.serviceWorker.addEventListener("message", function (event) {
-    console.log("message sent from worker and received in client:", event.data);
-  });
+  const { url, state, code_verifier } = await authorization_code_request_info(
+    config
+  );
+  localStorage.setItem("pkce_state", state);
+  localStorage.setItem("pkce_code_verifier", code_verifier);
+  localStorage.setItem("oauth2_client_id", config.client_id);
+  localStorage.setItem("oauth2_token_endpoint", config.token_endpoint);
+  localStorage.setItem("oauth2_redirect_uri", config.redirect_uri);
+  window.location = url;
+}
 
-  setTimeout(async () => {
-    postMessageToWorker({
-      type: "storeToken",
-      token: 123,
-      origin: "https://surveyor.site.test",
-    });
-  }, 2000);
+export async function useOAuth2() {
+  await navigator.serviceWorker.register("./service-worker.js");
 
-  return { controlled_fetch: make_controlled_fetch(config) };
+  // we need this as a workaround to the fact that the service worker doesn't kick in with a hard refresh
+  !navigator.serviceWorker.controller && location.reload();
 }
